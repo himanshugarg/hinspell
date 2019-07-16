@@ -9,49 +9,49 @@ def P(word, N=sum(WORDS.values())):
     "Probability of `word`."
     return WORDS[word] / N
 
-def correction(word, letters='abcdefghijklmnopqrstuvwxyz'): 
+def correction(word): 
     "Most probable spelling correction for word."
-    return max(candidates(word, letters), key=P)
+    return max(candidates(word), key=P)
 
-def candidates(word, letters): 
+def candidates(word): 
     "Generate possible spelling corrections for word."
-    return (known([word]) or known(edits1(word, letters)) or known(edits2(word, letters)) or [word])
+    return (known([word]) or known(edits1(word)) or known(edits2(word)) or [word])
 
 def known(words): 
     "The subset of `words` that appear in the dictionary of WORDS."
     return set(w for w in words if w in WORDS)
 
-def edits1(word, letters):
+def edits1(word, letters=[chr(i) for i in range(9*(16**2), 9*(16**2)+7*16+15+1)]):
     "All edits that are one edit away from `word`."    
     splits     = [(word[:i], word[i:])    for i in range(len(word) + 1)]
     deletes    = [L + R[1:]               for L, R in splits if R]
     transposes = [L + R[1] + R[0] + R[2:] for L, R in splits if len(R)>1]
     replaces   = [L + c + R[1:]           for L, R in splits if R for c in letters]
     inserts    = [L + c + R               for L, R in splits for c in letters]
-    return set(transposes + replaces + inserts)
+    return set(deletes + transposes + replaces + inserts)
 
-def edits2(word, letters): 
+def edits2(word): 
     "All edits that are two edits away from `word`."
-    return (e2 for e1 in edits1(word, letters) for e2 in edits1(e1, letters))
+    return (e2 for e1 in edits1(word) for e2 in edits1(e1))
     
 if __name__ == '__main__':
     unprintable = set()
     with open('in.txt', encoding='utf-8') as f:
-        for line in f:	    	    
+        for line in f:
             unprintable = unprintable | set(line)
             
         for letter in list(unprintable):
             if letter.isprintable():
                 unprintable.remove(letter)
-    
+
     of = open('out.txt', 'w', encoding='utf-8')
     with open('in.txt', encoding='utf-8') as f:
-        for line in f:	    	    
+        for line in f:
             words = line.strip().split()
             for word in words:
                 # if it has any non print chars
                 if len(set(word) & set(unprintable)) > 0:
-                    corrected = correction(word, unprintable)
+                    corrected = correction(word)
                     if corrected != word: # if it was corrected
-                        of.write(f"{word} -> {corrected}\n")
+                        of.write(word + "->" + corrected + "\n")
                         of.flush()
